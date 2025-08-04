@@ -29,7 +29,7 @@ jobs:
       - name: Run tests
         run: pytest test_main.py
 
-  build-and-deploy:
+  build-and-deploy-to-docker-hub:
     needs: test
     runs-on: ubuntu-latest
 
@@ -46,6 +46,11 @@ jobs:
       - name: Push image to DockerHub
         run: docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:latest
 
+  deploy-to-ec2:
+    needs: build-and-deploy-to-docker-hub
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Deploy to EC2 Kubernetes
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -73,10 +78,8 @@ jobs:
 
             cd k8s-manifests
 
-            # Apply all manifests
             kubectl apply -f games-deployment.yml
             kubectl apply -f games-service.yml
             kubectl apply -f service-ingress.yml
 
-            # Force rollout restart to reload pods with the latest image
             kubectl rollout restart deployment games-deployment
