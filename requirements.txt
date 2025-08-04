@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 sqlalchemy-cockroachdb
 psycopg2-binary
+pytest
+httpx
