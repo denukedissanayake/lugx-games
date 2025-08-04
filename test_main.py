@@ -17,7 +17,7 @@ def client(mock_db):
     app.dependency_overrides.clear()
 
 def test_get_games(client, mock_db):
-    mock_game = Game(id=1, name="Mock Game")
+    mock_game = Game(id=1, name="NFS")
     mock_db.query.return_value.all.return_value = [mock_game]
 
     response = client.get("/")
