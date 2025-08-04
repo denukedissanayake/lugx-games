@@ -1,38 +1,45 @@
+import pytest
 from fastapi.testclient import TestClient
-from main import app, GameCreate
 from unittest.mock import MagicMock
-from sqlalchemy.orm import Session
+from main import app, get_db
+from models import Game
 
-client = TestClient(app)
+@pytest.fixture
+def mock_db():
+    db = MagicMock()
+    yield db
 
-def test_get_games_mocked():
-    mock_db = MagicMock(spec=Session)
-    mock_db.query.return_value.all.return_value = [{"id": 1, "name": "NFS"}]
+@pytest.fixture
+def client(mock_db):
+    app.dependency_overrides[get_db] = lambda: mock_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
 
-    app.dependency_overrides = {
-        app.dependency_overrides: lambda: mock_db
-    }
+def test_get_games(client, mock_db):
+    mock_game = Game(id=1, name="Mock Game")
+    mock_db.query.return_value.all.return_value = [mock_game]
 
     response = client.get("/")
+
     assert response.status_code == 200
     assert response.json() == [{"id": 1, "name": "NFS"}]
 
-    app.dependency_overrides = {}
+def test_add_game(client, mock_db):
+    def refresh_side_effect(game):
+        game.id = 1
 
-def test_add_game_mocked():
-    mock_db = MagicMock(spec=Session)
     mock_db.add.return_value = None
     mock_db.commit.return_value = None
-    mock_db.refresh.return_value = None
+    mock_db.refresh.side_effect = refresh_side_effect
 
-    app.dependency_overrides = {
-        app.dependency_overrides: lambda: mock_db
-    }
+    response = client.post("/", json={"name": "Call of Duty"})
 
-    item = {"name": "Call of Duty"}
-    response = client.post("/", json=item)
     assert response.status_code == 200
-    assert response.json()["name"] == "Call of Duty"
+    assert response.json() == {"id": 1, "name": "Call of Duty"}
+    assert mock_db.add.called
+    assert mock_db.commit.called
+    assert mock_db.refresh.called
 
-    app.dependency_overrides = {}
+
 
