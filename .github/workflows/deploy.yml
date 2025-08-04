@@ -30,6 +30,7 @@ jobs:
         run: pytest
 
   build-and-deploy:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
