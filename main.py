@@ -6,8 +6,6 @@ from pydantic import BaseModel
 
 app = FastAPI(root_path="/games")
 
-Base.metadata.create_all(bind=engine)
-
 def get_db():
     db = SessionLocal()
     try:
@@ -30,4 +28,10 @@ def add_game(game: GameCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_game)
     return db_game
+
+def init_db():
+    Base.metadata.create_all(bind=engine)
+
+if __name__ == "__main__":
+    init_db()
 
